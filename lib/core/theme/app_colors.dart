@@ -1,57 +1,46 @@
 import 'package:flutter/material.dart';
 
-/// Palette de couleurs officielle FuelTrack (basée sur le logo).
+/// Système de couleurs FuelTrack — minimaliste & premium.
+///
+/// Direction : fiabilité, efficacité, maîtrise. Aucune couleur saturée RGB,
+/// pas de néon, pas de glassmorphism, pas de dégradés voyants.
+/// Palette = neutres (gris / blanc cassé) + bleu pétrole + vert foncé,
+/// avec UNE seule couleur d'accent pour les actions importantes.
 class AppColors {
   AppColors._();
 
-  // Couleurs principales du cahier des charges
-  static const Color navyBlue = Color(0xFF0A2540); // Primaire
-  static const Color emerald = Color(0xFF00D4A5); // Secondaire ("Fuel")
-  static const Color orange = Color(0xFFFF6B35); // Accent ("Track")
-  static const Color lightGray = Color(0xFFF4F6F9);
-  static const Color darkGray = Color(0xFF1E2937);
-  static const Color white = Color(0xFFFFFFFF);
+  // --- Accent unique (actions importantes & valeurs clés) ---
+  static const Color accent = Color(0xFF1C9E78); // vert maîtrisé
+  static const Color accentPressed = Color(0xFF16805F);
+  static const Color accentSoft = Color(0xFFE6F3EE); // fond tonal clair
 
-  // Déclinaisons / nuances utiles pour le design 3D
-  static const Color navyLight = Color(0xFF13335A);
-  static const Color navyDeep = Color(0xFF061829);
-  static const Color emeraldDark = Color(0xFF00A582);
-  static const Color orangeDark = Color(0xFFD9531E);
+  // --- Marque ---
+  static const Color petrol = Color(0xFF11414B); // bleu pétrole
+  static const Color petrolDeep = Color(0xFF0B2E36);
+  static const Color forest = Color(0xFF1E5141); // vert foncé
 
-  // Sémantique
-  static const Color success = emerald;
-  static const Color warning = Color(0xFFFFB020);
-  static const Color danger = Color(0xFFFF4D5E);
-  static const Color info = Color(0xFF3DA5FF);
+  // --- Neutres (clair) ---
+  static const Color ink = Color(0xFF0F1417); // texte principal
+  static const Color slate700 = Color(0xFF3A464D);
+  static const Color slate500 = Color(0xFF6B7780); // texte secondaire
+  static const Color slate400 = Color(0xFF94A0A7); // texte tertiaire / icônes
+  static const Color slate300 = Color(0xFFC3CACE);
+  static const Color line = Color(0xFFE3E7E9); // bordures / séparateurs
+  static const Color surfaceMuted = Color(0xFFEDF0F1); // fills légers
+  static const Color bg = Color(0xFFF4F5F6); // fond app clair
+  static const Color card = Color(0xFFFFFFFF);
 
-  // Dégradés signature (design orienté 3D)
-  static const LinearGradient brandGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [emerald, orange],
-  );
+  // --- Neutres (sombre, teintés pétrole) ---
+  static const Color bgDark = Color(0xFF0B1416);
+  static const Color cardDark = Color(0xFF121E22);
+  static const Color surfaceMutedDark = Color(0xFF1A282E);
+  static const Color lineDark = Color(0xFF243036);
+  static const Color textDark = Color(0xFFF4F5F6);
+  static const Color textDarkSecondary = Color(0xFF9AA7AE);
 
-  static const LinearGradient emeraldGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1FE3B6), emeraldDark],
-  );
-
-  static const LinearGradient orangeGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFFF8A5C), orangeDark],
-  );
-
-  static const LinearGradient navyGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [navyLight, navyDeep],
-  );
-
-  // Surfaces verre (glassmorphism)
-  static Color glassDark = white.withValues(alpha: 0.06);
-  static Color glassBorderDark = white.withValues(alpha: 0.12);
-  static Color glassLight = white.withValues(alpha: 0.65);
-  static Color glassBorderLight = white.withValues(alpha: 0.8);
+  // --- Sémantique (sobre, non saturée) ---
+  static const Color positive = accent;
+  static const Color warning = Color(0xFFB9772A);
+  static const Color danger = Color(0xFFC04A33);
+  static const Color info = petrol;
 }

@@ -5,9 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/app_background.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/glass_card.dart';
 import '../../../data/local/database.dart';
 import '../../../providers/app_providers.dart';
 import '../viewmodel/depense_viewmodel.dart';
@@ -17,93 +16,55 @@ class DepensesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final depensesAsync = ref.watch(depensesProvider);
     final devise = ref.watch(settingsStreamProvider).value?.devise ?? '€';
 
     return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Column(
+      appBar: AppBar(title: const Text('Dépenses')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push(Routes.depenseForm),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Dépense'),
+      ),
+      body: depensesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Erreur : $e')),
+        data: (depenses) {
+          if (depenses.isEmpty) {
+            return const EmptyState(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Aucune dépense',
+              message:
+                  'Suivez vos frais : assurance, péage, parking, réparations…',
+            );
+          }
+          final total = depenses.fold<double>(0, (s, d) => s + d.montant);
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
+              AppCard(
+                color: AppColors.petrol,
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(Icons.arrow_back_rounded)),
-                    Text('Dépenses',
-                        style: theme.textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const Text('Total des dépenses',
+                        style: TextStyle(color: Colors.white70)),
+                    Text(Formatters.money(total, devise),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
-              Expanded(
-                child: depensesAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Erreur : $e')),
-                  data: (depenses) {
-                    if (depenses.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.account_balance_wallet_rounded,
-                        title: 'Aucune dépense',
-                        message:
-                            'Suivez vos frais : assurance, péage, parking, réparations…',
-                      );
-                    }
-                    final total =
-                        depenses.fold<double>(0, (s, d) => s + d.montant);
-                    return Column(
-                      children: [
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
-                          child: GlassCard(
-                            gradient: AppColors.brandGradient,
-                            child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Total des dépenses',
-                                    style: TextStyle(color: Colors.white70)),
-                                Text(Formatters.money(total, devise),
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w800)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: ListView.separated(
-                            padding:
-                                const EdgeInsets.fromLTRB(16, 8, 16, 120),
-                            itemCount: depenses.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (_, i) => _DepenseCard(
-                                depense: depenses[i], devise: devise),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
+              const SizedBox(height: 12),
+              for (final d in depenses) ...[
+                _DepenseCard(depense: d, devise: devise),
+                const SizedBox(height: 12),
+              ],
             ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(Routes.depenseForm),
-        backgroundColor: AppColors.orange,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Dépense'),
+          );
+        },
       ),
     );
   }
@@ -118,6 +79,11 @@ class _DepenseCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cat = depense.categorie;
+    final secondary = theme.brightness == Brightness.dark
+        ? AppColors.textDarkSecondary
+        : AppColors.slate500;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Dismissible(
       key: ValueKey(depense.id),
       direction: DismissDirection.endToStart,
@@ -126,23 +92,25 @@ class _DepenseCard extends ConsumerWidget {
         padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
           color: AppColors.danger,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete_rounded, color: Colors.white),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
       ),
       onDismissed: (_) =>
           ref.read(depenseViewModelProvider.notifier).delete(depense.id),
-      child: GlassCard(
+      child: AppCard(
         onTap: () => context.push(Routes.depenseForm, extra: depense),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              height: 44,
+              width: 44,
               decoration: BoxDecoration(
-                color: cat.color.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(14),
+                color:
+                    isDark ? AppColors.surfaceMutedDark : AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(cat.icon, color: cat.color),
+              child: Icon(cat.icon, color: AppColors.petrol, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -151,18 +119,19 @@ class _DepenseCard extends ConsumerWidget {
                 children: [
                   Text(cat.label,
                       style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                          ?.copyWith(fontWeight: FontWeight.w600)),
                   Text(
-                    '${Formatters.date(depense.date)}${depense.description != null ? ' • ${depense.description}' : ''}',
+                    '${Formatters.date(depense.date)}${depense.description != null ? ' · ${depense.description}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall,
+                    style: theme.textTheme.bodySmall?.copyWith(color: secondary),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Text(Formatters.money(depense.montant, devise),
-                style: theme.textTheme.titleMedium
+                style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.w700)),
           ],
         ),

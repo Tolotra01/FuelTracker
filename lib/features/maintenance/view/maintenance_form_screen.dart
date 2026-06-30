@@ -6,9 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/enums.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/app_background.dart';
-import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/gradient_button.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../data/local/database.dart';
 import '../../../providers/app_providers.dart';
 import '../viewmodel/maintenance_viewmodel.dart';
@@ -22,8 +21,7 @@ class MaintenanceFormScreen extends ConsumerStatefulWidget {
       _MaintenanceFormScreenState();
 }
 
-class _MaintenanceFormScreenState
-    extends ConsumerState<MaintenanceFormScreen> {
+class _MaintenanceFormScreenState extends ConsumerState<MaintenanceFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _km;
   late final TextEditingController _cout;
@@ -84,168 +82,145 @@ class _MaintenanceFormScreenState
   Widget build(BuildContext context) {
     final vehicule = ref.watch(activeVehicleProvider);
     if (vehicule == null) {
-      return const Scaffold(
-          body: Center(child: Text('Ajoutez un véhicule au préalable.')));
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('Ajoutez un véhicule au préalable.')),
+      );
     }
 
     return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Column(
+      appBar: AppBar(
+        title: Text(_isEdit ? "Modifier l'entretien" : 'Nouvel entretien'),
+        leading: IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.close_rounded)),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
-                child: Row(
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(Icons.close_rounded)),
-                    Text(_isEdit ? 'Modifier l\'entretien' : 'Nouvel entretien',
+                    Text('Type de maintenance',
                         style: Theme.of(context)
                             .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700)),
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final t in TypeMaintenance.values)
+                          ChoiceChip(
+                            avatar: Icon(t.icon,
+                                size: 18,
+                                color: _type == t
+                                    ? Colors.white
+                                    : AppColors.slate500),
+                            label: Text(t.label),
+                            labelStyle: TextStyle(
+                                color: _type == t ? Colors.white : null),
+                            selected: _type == t,
+                            onSelected: (_) => setState(() => _type = t),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Type de maintenance',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  for (final t in TypeMaintenance.values)
-                                    ChoiceChip(
-                                      avatar: Icon(t.icon,
-                                          size: 18,
-                                          color: _type == t
-                                              ? AppColors.navyDeep
-                                              : null),
-                                      label: Text(t.label),
-                                      selected: _type == t,
-                                      selectedColor: AppColors.emerald,
-                                      onSelected: (_) =>
-                                          setState(() => _type = t),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Définissez un rappel par date et/ou kilométrage',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(height: 12),
-                              InkWell(
-                                onTap: () async {
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate:
-                                        _datePrevue ?? DateTime.now(),
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(2100),
-                                  );
-                                  if (picked != null) {
-                                    setState(() => _datePrevue = picked);
-                                  }
-                                },
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.event_rounded,
-                                        color: AppColors.emerald),
-                                    const SizedBox(width: 12),
-                                    const Text('Date prévue'),
-                                    const Spacer(),
-                                    Text(
-                                      _datePrevue != null
-                                          ? Formatters.date(_datePrevue!)
-                                          : 'Choisir',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                    if (_datePrevue != null)
-                                      IconButton(
-                                        icon: const Icon(Icons.clear_rounded,
-                                            size: 18),
-                                        onPressed: () =>
-                                            setState(() => _datePrevue = null),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const Divider(height: 24),
-                              TextFormField(
-                                controller: _km,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[0-9.,]'))
-                                ],
-                                decoration: const InputDecoration(
-                                  labelText: 'Kilométrage prévu (facultatif)',
-                                  prefixIcon: Icon(Icons.speed_rounded),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              TextFormField(
-                                controller: _cout,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[0-9.,]'))
-                                ],
-                                decoration: const InputDecoration(
-                                  labelText: 'Coût estimé (facultatif)',
-                                  prefixIcon: Icon(Icons.payments_rounded),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              TextFormField(
-                                controller: _notes,
-                                maxLines: 2,
-                                decoration: const InputDecoration(
-                                  labelText: 'Notes (facultatif)',
-                                  prefixIcon: Icon(Icons.notes_rounded),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        GradientButton(
-                          label: _isEdit ? 'Enregistrer' : 'Planifier',
-                          icon: Icons.check_rounded,
-                          loading: _saving,
-                          onPressed: () => _save(vehicule.id),
-                        ),
-                      ],
+              const SizedBox(height: 16),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Échéance par date et/ou kilométrage',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _datePrevue ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() => _datePrevue = picked);
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(Icons.event_outlined,
+                              color: AppColors.petrol, size: 20),
+                          const SizedBox(width: 12),
+                          const Text('Date prévue'),
+                          const Spacer(),
+                          Text(
+                            _datePrevue != null
+                                ? Formatters.date(_datePrevue!)
+                                : 'Choisir',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          if (_datePrevue != null)
+                            IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 18),
+                              onPressed: () =>
+                                  setState(() => _datePrevue = null),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 24),
+                    TextFormField(
+                      controller: _km,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Kilométrage prévu (facultatif)',
+                        prefixIcon: Icon(Icons.speed_outlined, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _cout,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Coût estimé (facultatif)',
+                        prefixIcon: Icon(Icons.payments_outlined, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _notes,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (facultatif)',
+                        prefixIcon: Icon(Icons.notes_outlined, size: 20),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                label: _isEdit ? 'Enregistrer' : 'Planifier',
+                icon: Icons.check_rounded,
+                loading: _saving,
+                onPressed: () => _save(vehicule.id),
               ),
             ],
           ),

@@ -8,9 +8,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/enums.dart';
 import '../../../core/services/image_storage.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_background.dart';
-import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/gradient_button.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../data/local/database.dart';
 import '../viewmodel/vehicle_viewmodel.dart';
 
@@ -29,6 +28,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
   late final TextEditingController _annee;
   late final TextEditingController _plaque;
   late final TextEditingController _kmInitial;
+  late final TextEditingController _capacite;
   late TypeCarburant _typeCarburant;
   late bool _parDefaut;
   String? _photo;
@@ -42,11 +42,15 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
     final v = widget.vehicule;
     _marque = TextEditingController(text: v?.marque ?? '');
     _modele = TextEditingController(text: v?.modele ?? '');
-    _annee =
-        TextEditingController(text: (v?.annee ?? DateTime.now().year).toString());
+    _annee = TextEditingController(
+        text: (v?.annee ?? DateTime.now().year).toString());
     _plaque = TextEditingController(text: v?.plaque ?? '');
     _kmInitial =
         TextEditingController(text: (v?.kmInitial ?? 0).toStringAsFixed(0));
+    _capacite = TextEditingController(
+        text: v?.capaciteReservoir != null
+            ? v!.capaciteReservoir!.toStringAsFixed(0)
+            : '');
     _typeCarburant = v?.typeCarburant ?? TypeCarburant.essence;
     _parDefaut = v?.parDefaut ?? false;
     _photo = v?.photo;
@@ -59,6 +63,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
     _annee.dispose();
     _plaque.dispose();
     _kmInitial.dispose();
+    _capacite.dispose();
     super.dispose();
   }
 
@@ -78,7 +83,11 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
             annee: int.tryParse(_annee.text) ?? DateTime.now().year,
             plaque: _plaque.text.trim().isEmpty ? null : _plaque.text.trim(),
             typeCarburant: _typeCarburant,
-            kmInitial: double.tryParse(_kmInitial.text.replaceAll(',', '.')) ?? 0,
+            kmInitial:
+                double.tryParse(_kmInitial.text.replaceAll(',', '.')) ?? 0,
+            capaciteReservoir: _capacite.text.trim().isEmpty
+                ? null
+                : double.tryParse(_capacite.text.replaceAll(',', '.')),
             photo: _photo,
             parDefaut: _parDefaut,
           );
@@ -91,106 +100,111 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Column(
+      appBar: AppBar(
+        title: Text(_isEdit ? 'Modifier le véhicule' : 'Nouveau véhicule'),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              _FormHeader(title: _isEdit ? 'Modifier le véhicule' : 'Nouveau véhicule'),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
+              GestureDetector(
+                onTap: _pickPhoto,
+                child: _PhotoPicker(photo: _photo),
+              ),
+              const SizedBox(height: 16),
+              AppCard(
+                child: Column(
+                  children: [
+                    _field(_marque, 'Marque',
+                        icon: Icons.directions_car_outlined),
+                    const SizedBox(height: 12),
+                    _field(_modele, 'Modèle', icon: Icons.badge_outlined),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: _pickPhoto,
-                          child: _PhotoPicker(photo: _photo),
+                        Expanded(
+                          child: _field(_annee, 'Année',
+                              icon: Icons.event_outlined, number: true),
                         ),
-                        const SizedBox(height: 20),
-                        GlassCard(
-                          child: Column(
-                            children: [
-                              _field(_marque, 'Marque',
-                                  icon: Icons.directions_car_rounded),
-                              const SizedBox(height: 14),
-                              _field(_modele, 'Modèle',
-                                  icon: Icons.badge_rounded),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _field(_annee, 'Année',
-                                        icon: Icons.calendar_today_rounded,
-                                        number: true),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _field(_plaque, 'Plaque',
-                                        icon: Icons.pin_rounded,
-                                        required: false),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              _field(_kmInitial, 'Kilométrage initial',
-                                  icon: Icons.speed_rounded, number: true),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Type de carburant',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  for (final t in TypeCarburant.values)
-                                    ChoiceChip(
-                                      avatar: Icon(t.icon,
-                                          size: 18,
-                                          color: _typeCarburant == t
-                                              ? AppColors.navyDeep
-                                              : null),
-                                      label: Text(t.label),
-                                      selected: _typeCarburant == t,
-                                      selectedColor: AppColors.emerald,
-                                      onSelected: (_) =>
-                                          setState(() => _typeCarburant = t),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              SwitchListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: const Text('Véhicule par défaut'),
-                                value: _parDefaut,
-                                activeThumbColor: AppColors.emerald,
-                                onChanged: (v) =>
-                                    setState(() => _parDefaut = v),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        GradientButton(
-                          label: _isEdit ? 'Enregistrer' : 'Ajouter le véhicule',
-                          icon: Icons.check_rounded,
-                          loading: _saving,
-                          onPressed: _save,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _field(_plaque, 'Plaque',
+                              icon: Icons.pin_outlined, required: false),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _field(_kmInitial, 'Km initial',
+                              icon: Icons.speed_outlined, number: true),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _field(_capacite, 'Réservoir (L)',
+                              icon: Icons.local_gas_station_outlined,
+                              number: true,
+                              required: false),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 16),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Type de carburant',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final t in TypeCarburant.values)
+                          ChoiceChip(
+                            avatar: Icon(t.icon,
+                                size: 18,
+                                color: _typeCarburant == t
+                                    ? Colors.white
+                                    : AppColors.slate500),
+                            label: Text(t.label),
+                            labelStyle: TextStyle(
+                                color: _typeCarburant == t
+                                    ? Colors.white
+                                    : null),
+                            selected: _typeCarburant == t,
+                            onSelected: (_) =>
+                                setState(() => _typeCarburant = t),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Véhicule par défaut'),
+                      value: _parDefaut,
+                      onChanged: (v) => setState(() => _parDefaut = v),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                label: _isEdit ? 'Enregistrer' : 'Ajouter le véhicule',
+                icon: Icons.check_rounded,
+                loading: _saving,
+                onPressed: _save,
               ),
             ],
           ),
@@ -216,36 +230,11 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
           : null,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: icon != null ? Icon(icon) : null,
+        prefixIcon: icon != null ? Icon(icon, size: 20) : null,
       ),
       validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null
+          ? (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null
           : null,
-    );
-  }
-}
-
-class _FormHeader extends StatelessWidget {
-  const _FormHeader({required this.title});
-  final String title;
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.close_rounded)),
-          Expanded(
-            child: Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -256,34 +245,31 @@ class _PhotoPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final has = photo != null && File(photo!).existsSync();
+    final secondary =
+        isDark ? AppColors.textDarkSecondary : AppColors.slate500;
     return Container(
-      height: 150,
+      height: 140,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: AppColors.navyGradient,
+        color: isDark ? AppColors.surfaceMutedDark : AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark ? AppColors.lineDark : AppColors.line),
         image: has
             ? DecorationImage(image: FileImage(File(photo!)), fit: BoxFit.cover)
             : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: has
           ? null
-          : const Column(
+          : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_a_photo_rounded,
-                    color: AppColors.emerald, size: 36),
-                SizedBox(height: 8),
+                Icon(Icons.add_a_photo_outlined, color: secondary, size: 28),
+                const SizedBox(height: 8),
                 Text('Ajouter une photo',
-                    style: TextStyle(color: Colors.white70)),
+                    style: TextStyle(color: secondary)),
               ],
             ),
     );

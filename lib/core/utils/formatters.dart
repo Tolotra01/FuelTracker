@@ -17,12 +17,23 @@ class Formatters {
   static String monthShort(DateTime d) => _monthShort.format(d);
 
   static String money(num value, String devise) {
+    // L'Ariary (Ar) ne s'écrit pas avec de décimales et se place après le montant.
+    final sansDecimales = devise == 'Ar' || devise == 'FCFA';
     final f = NumberFormat.currency(
       locale: 'fr_FR',
-      symbol: devise,
-      decimalDigits: 2,
+      symbol: '', // on place le symbole nous-mêmes
+      decimalDigits: sansDecimales ? 0 : 2,
     );
-    return f.format(value);
+    final montant = f.format(value).trim();
+    return '$montant $devise';
+  }
+
+  /// Format compact pour les axes de graphiques (1 200 → 1,2k).
+  static String compact(num value) {
+    final v = value.abs();
+    if (v >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return '${(value / 1000).toStringAsFixed(value >= 10000 ? 0 : 1)}k';
+    return value.toStringAsFixed(0);
   }
 
   static String number(num value, {int decimals = 1}) {

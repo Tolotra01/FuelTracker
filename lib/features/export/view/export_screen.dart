@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_background.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/gradient_button.dart';
 import '../../../providers/app_providers.dart';
 import '../../statistics/viewmodel/statistics_viewmodel.dart';
 import '../../pleins/viewmodel/plein_viewmodel.dart';
@@ -38,8 +36,8 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
         pleins: pleins,
         devise: devise,
       );
-      await ExportService.instance
-          .share(file, 'Rapport FuelTrack — ${vehicule.marque} ${vehicule.modele}');
+      await ExportService.instance.share(
+          file, 'Rapport FuelTrack — ${vehicule.marque} ${vehicule.modele}');
     } finally {
       if (mounted) setState(() => _pdfLoading = false);
     }
@@ -48,6 +46,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
   Future<void> _exportCsv() async {
     final vehicule = ref.read(activeVehicleProvider);
     if (vehicule == null) return;
+    final devise = ref.read(settingsStreamProvider).value?.devise ?? '€';
     setState(() => _csvLoading = true);
     try {
       final pleins =
@@ -62,6 +61,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
         pleins: pleins,
         depenses: depenses,
         maintenances: maintenances,
+        devise: devise,
       );
       await ExportService.instance.share(file, 'Export CSV FuelTrack');
     } finally {
@@ -73,120 +73,96 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final vehicule = ref.watch(activeVehicleProvider);
+    final secondary = theme.brightness == Brightness.dark
+        ? AppColors.textDarkSecondary
+        : AppColors.slate500;
 
     return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(Icons.arrow_back_rounded)),
-                    Text('Exporter mes données',
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: vehicule == null
-                    ? EmptyState(
-                        icon: Icons.ios_share_rounded,
-                        title: 'Aucune donnée',
-                        message: 'Ajoutez un véhicule et des pleins à exporter.',
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          GlassCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(colors: [
-                                          AppColors.danger,
-                                          Color(0xFFB3303D)
-                                        ]),
-                                        borderRadius:
-                                            BorderRadius.circular(14),
-                                      ),
-                                      child: const Icon(
-                                          Icons.picture_as_pdf_rounded,
-                                          color: Colors.white),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Text(
-                                          'Rapport PDF mensuel avec statistiques et historique des pleins.',
-                                          style: theme.textTheme.bodyMedium),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                GradientButton(
-                                  label: 'Exporter en PDF',
-                                  icon: Icons.picture_as_pdf_rounded,
-                                  gradient: const LinearGradient(colors: [
-                                    AppColors.danger,
-                                    Color(0xFFB3303D)
-                                  ]),
-                                  loading: _pdfLoading,
-                                  onPressed: _exportPdf,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        gradient: AppColors.emeraldGradient,
-                                        borderRadius:
-                                            BorderRadius.circular(14),
-                                      ),
-                                      child: const Icon(
-                                          Icons.table_chart_rounded,
-                                          color: Colors.white),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Text(
-                                          'Export CSV complet : pleins, dépenses et maintenances (compatible Excel).',
-                                          style: theme.textTheme.bodyMedium),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                GradientButton(
-                                  label: 'Exporter en CSV',
-                                  icon: Icons.table_chart_rounded,
-                                  loading: _csvLoading,
-                                  onPressed: _exportCsv,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+      appBar: AppBar(title: const Text('Exporter mes données')),
+      body: vehicule == null
+          ? const EmptyState(
+              icon: Icons.ios_share_outlined,
+              title: 'Aucune donnée',
+              message: 'Ajoutez un véhicule et des pleins à exporter.',
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CardHeader(
+                        icon: Icons.picture_as_pdf_outlined,
+                        text:
+                            'Rapport PDF avec statistiques et historique des pleins.',
+                        secondary: secondary,
                       ),
-              ),
-            ],
+                      const SizedBox(height: 16),
+                      PrimaryButton(
+                        label: 'Exporter en PDF',
+                        icon: Icons.picture_as_pdf_outlined,
+                        loading: _pdfLoading,
+                        onPressed: _exportPdf,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CardHeader(
+                        icon: Icons.table_chart_outlined,
+                        text:
+                            'Export CSV complet : pleins, dépenses et maintenances (Excel).',
+                        secondary: secondary,
+                      ),
+                      const SizedBox(height: 16),
+                      SecondaryButton(
+                        label: 'Exporter en CSV',
+                        icon: Icons.table_chart_outlined,
+                        onPressed: _csvLoading ? null : _exportCsv,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _CardHeader extends StatelessWidget {
+  const _CardHeader(
+      {required this.icon, required this.text, required this.secondary});
+  final IconData icon;
+  final String text;
+  final Color secondary;
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Container(
+          height: 44,
+          width: 44,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceMutedDark : AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: Icon(icon, color: AppColors.petrol),
         ),
-      ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(text,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: secondary)),
+        ),
+      ],
     );
   }
 }

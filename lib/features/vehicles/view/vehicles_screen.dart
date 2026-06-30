@@ -6,12 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_background.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/gradient_button.dart';
-import '../../../data/local/database.dart';
 import '../../../providers/app_providers.dart';
+import '../../../data/local/database.dart';
 import '../viewmodel/vehicle_viewmodel.dart';
 
 class VehiclesScreen extends ConsumerWidget {
@@ -22,73 +21,38 @@ class VehiclesScreen extends ConsumerWidget {
     final vehiclesAsync = ref.watch(vehiclesStreamProvider);
 
     return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              _Header(),
-              Expanded(
-                child: vehiclesAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Erreur : $e')),
-                  data: (vehicles) {
-                    if (vehicles.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.directions_car_rounded,
-                        title: 'Aucun véhicule',
-                        message:
-                            'Ajoutez votre premier véhicule pour commencer le suivi.',
-                        action: GradientButton(
-                          label: 'Ajouter un véhicule',
-                          icon: Icons.add_rounded,
-                          expanded: false,
-                          onPressed: () => context.push(Routes.vehicleForm),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-                      itemCount: vehicles.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: 14),
-                      itemBuilder: (_, i) =>
-                          _VehicleCard(vehicule: vehicles[i]),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Mes véhicules')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(Routes.vehicleForm),
-        backgroundColor: AppColors.emerald,
-        foregroundColor: AppColors.navyDeep,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Véhicule'),
       ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
-          Text('Mes véhicules',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  )),
-        ],
+      body: vehiclesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Erreur : $e')),
+        data: (vehicles) {
+          if (vehicles.isEmpty) {
+            return EmptyState(
+              icon: Icons.directions_car_outlined,
+              title: 'Aucun véhicule',
+              message: 'Ajoutez votre premier véhicule pour commencer le suivi.',
+              action: SizedBox(
+                width: 220,
+                child: PrimaryButton(
+                  label: 'Ajouter un véhicule',
+                  icon: Icons.add_rounded,
+                  onPressed: () => context.push(Routes.vehicleForm),
+                ),
+              ),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+            itemCount: vehicles.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => _VehicleCard(vehicule: vehicles[i]),
+          );
+        },
       ),
     );
   }
@@ -102,8 +66,11 @@ class _VehicleCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final kmAsync = ref.watch(kmActuelProvider(vehicule));
+    final secondary = theme.brightness == Brightness.dark
+        ? AppColors.textDarkSecondary
+        : AppColors.slate500;
 
-    return GlassCard(
+    return AppCard(
       onTap: () => context.push(Routes.vehicleForm, extra: vehicule),
       child: Row(
         children: [
@@ -119,41 +86,20 @@ class _VehicleCard extends ConsumerWidget {
                       child: Text(
                         '${vehicule.marque} ${vehicule.modele}',
                         style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (vehicule.parDefaut) ...[
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.emeraldGradient,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text('Défaut',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600)),
-                      ),
+                      _DefaultBadge(),
                     ],
                   ],
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(vehicule.typeCarburant.icon,
-                        size: 14,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${vehicule.typeCarburant.label} • ${vehicule.annee}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
+                Text(
+                  '${vehicule.typeCarburant.label} • ${vehicule.annee}',
+                  style: theme.textTheme.bodySmall?.copyWith(color: secondary),
                 ),
                 const SizedBox(height: 2),
                 kmAsync.when(
@@ -162,7 +108,7 @@ class _VehicleCard extends ConsumerWidget {
                   data: (km) => Text(
                     '${km.toStringAsFixed(0)} km au compteur',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.emerald,
+                      color: AppColors.accent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -171,7 +117,7 @@ class _VehicleCard extends ConsumerWidget {
             ),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded),
+            icon: Icon(Icons.more_vert_rounded, color: secondary),
             onSelected: (value) async {
               final vm = ref.read(vehicleViewModelProvider.notifier);
               if (value == 'default') {
@@ -209,8 +155,8 @@ class _VehicleCard extends ConsumerWidget {
           TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Annuler')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Supprimer'),
           ),
@@ -218,6 +164,24 @@ class _VehicleCard extends ConsumerWidget {
       ),
     );
     return result ?? false;
+  }
+}
+
+class _DefaultBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.accentSoft,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text('Défaut',
+          style: TextStyle(
+              color: AppColors.accentPressed,
+              fontSize: 11,
+              fontWeight: FontWeight.w600)),
+    );
   }
 }
 
@@ -230,20 +194,20 @@ class _Avatar extends StatelessWidget {
     final photo = vehicule.photo;
     if (photo != null && File(photo).existsSync()) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Image.file(File(photo),
-            width: 56, height: 56, fit: BoxFit.cover),
+        borderRadius: BorderRadius.circular(12),
+        child:
+            Image.file(File(photo), width: 52, height: 52, fit: BoxFit.cover),
       );
     }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      width: 56,
-      height: 56,
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
-        gradient: AppColors.navyGradient,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppColors.surfaceMutedDark : AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(vehicule.typeCarburant.icon,
-          color: AppColors.emerald, size: 28),
+      child: Icon(vehicule.typeCarburant.icon, color: AppColors.petrol),
     );
   }
 }

@@ -8,9 +8,8 @@ import '../../../core/constants/enums.dart';
 import '../../../core/services/image_storage.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/app_background.dart';
-import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/gradient_button.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../data/local/database.dart';
 import '../../../providers/app_providers.dart';
 import '../viewmodel/plein_viewmodel.dart';
@@ -133,13 +132,13 @@ class _PleinFormScreenState extends ConsumerState<PleinFormScreen> {
             id: widget.plein?.id,
             vehiculeId: vehiculeId,
             date: _date,
-            odometre:
-                double.parse(_odometre.text.replaceAll(',', '.')),
+            odometre: double.parse(_odometre.text.replaceAll(',', '.')),
             volume: double.parse(_volume.text.replaceAll(',', '.')),
             prixUnitaire:
                 double.parse(_prixUnitaire.text.replaceAll(',', '.')),
             typePlein: _typePlein,
-            station: _station.text.trim().isEmpty ? null : _station.text.trim(),
+            station:
+                _station.text.trim().isEmpty ? null : _station.text.trim(),
             latitude: _lat,
             longitude: _lng,
             notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
@@ -153,11 +152,10 @@ class _PleinFormScreenState extends ConsumerState<PleinFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final vehicule = ref.watch(activeVehicleProvider);
-    final settings = ref.watch(settingsStreamProvider).value;
-    final devise = settings?.devise ?? '€';
+    final devise = ref.watch(settingsStreamProvider).value?.devise ?? '€';
 
-    // Préremplir l'odomètre avec le dernier plein (création uniquement).
     if (!_isEdit && !_prefilled) {
       final dernier = ref.watch(dernierPleinProvider).value;
       if (dernier != null && _odometre.text.isEmpty) {
@@ -171,170 +169,155 @@ class _PleinFormScreenState extends ConsumerState<PleinFormScreen> {
 
     if (vehicule == null) {
       return Scaffold(
-        body: AppBackground(
-          child: SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  "Ajoutez d'abord un véhicule pour enregistrer un plein.",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            ),
+        appBar: AppBar(),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text("Ajoutez d'abord un véhicule pour enregistrer un plein.",
+                textAlign: TextAlign.center),
           ),
         ),
       );
     }
 
     return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Column(
+      appBar: AppBar(
+        title: Text(_isEdit ? 'Modifier le plein' : 'Nouveau plein'),
+        leading: IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.close_rounded)),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              _Header(title: _isEdit ? 'Modifier le plein' : 'Nouveau plein'),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
+              // Prix total — mis en avant (hiérarchie forte), sobre.
+              AppCard(
+                color: AppColors.petrol,
+                child: Column(
+                  children: [
+                    Text('Prix total (calcul automatique)',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: Colors.white70)),
+                    const SizedBox(height: 4),
+                    Text(
+                      Formatters.money(_total, devise),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              AppCard(
+                child: Column(
+                  children: [
+                    _DateTile(date: _date, onTap: _pickDate),
+                    const Divider(height: 24),
+                    _field(_odometre, 'Odomètre (km)',
+                        icon: Icons.speed_outlined, number: true),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Carte de calcul auto du prix total
-                        GlassCard(
-                          gradient: AppColors.brandGradient,
-                          child: Column(
-                            children: [
-                              const Text('Prix total (calcul automatique)',
-                                  style: TextStyle(color: Colors.white70)),
-                              const SizedBox(height: 4),
-                              Text(
-                                Formatters.money(_total, devise),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w800),
-                              ),
-                            ],
-                          ),
+                        Expanded(
+                          child: _field(_volume, 'Volume (L)',
+                              icon: Icons.water_drop_outlined, number: true),
                         ),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            children: [
-                              _DateTile(date: _date, onTap: _pickDate),
-                              const Divider(height: 24),
-                              _field(_odometre, 'Odomètre (km)',
-                                  icon: Icons.speed_rounded, number: true),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _field(_volume, 'Volume (L)',
-                                        icon: Icons.water_drop_rounded,
-                                        number: true),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _field(
-                                        _prixUnitaire, 'Prix/L',
-                                        icon: Icons.euro_rounded,
-                                        number: true),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SegmentedButton<TypePlein>(
-                                segments: const [
-                                  ButtonSegment(
-                                      value: TypePlein.complet,
-                                      label: Text('Complet'),
-                                      icon: Icon(Icons.battery_full_rounded)),
-                                  ButtonSegment(
-                                      value: TypePlein.partiel,
-                                      label: Text('Partiel'),
-                                      icon: Icon(Icons.battery_3_bar_rounded)),
-                                ],
-                                selected: {_typePlein},
-                                onSelectionChanged: (s) =>
-                                    setState(() => _typePlein = s.first),
-                              ),
-                              const SizedBox(height: 14),
-                              _field(_station, 'Station',
-                                  icon: Icons.location_on_rounded,
-                                  required: false),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _lat != null
-                                          ? 'GPS : ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}'
-                                          : 'Aucune position enregistrée',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                  ),
-                                  TextButton.icon(
-                                    onPressed:
-                                        _gpsLoading ? null : _captureGps,
-                                    icon: _gpsLoading
-                                        ? const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 2))
-                                        : const Icon(Icons.my_location_rounded),
-                                    label: const Text('Capturer GPS'),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _field(_notes, 'Notes',
-                                  icon: Icons.notes_rounded,
-                                  required: false,
-                                  lines: 2),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          onTap: _pickPhoto,
-                          child: Row(
-                            children: [
-                              const Icon(Icons.receipt_long_rounded,
-                                  color: AppColors.emerald),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(_photo == null
-                                    ? 'Ajouter la photo du reçu'
-                                    : 'Photo du reçu ajoutée ✓'),
-                              ),
-                              const Icon(Icons.chevron_right_rounded),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        GradientButton(
-                          label: _isEdit ? 'Enregistrer' : 'Ajouter le plein',
-                          icon: Icons.check_rounded,
-                          gradient: AppColors.orangeGradient,
-                          loading: _saving,
-                          onPressed: () => _save(vehicule.id),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _field(_prixUnitaire, 'Prix/L',
+                              icon: Icons.sell_outlined, number: true),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 16),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SegmentedButton<TypePlein>(
+                      segments: const [
+                        ButtonSegment(
+                            value: TypePlein.complet,
+                            label: Text('Complet'),
+                            icon: Icon(Icons.battery_full_rounded, size: 18)),
+                        ButtonSegment(
+                            value: TypePlein.partiel,
+                            label: Text('Partiel'),
+                            icon: Icon(Icons.battery_3_bar_rounded, size: 18)),
+                      ],
+                      selected: {_typePlein},
+                      onSelectionChanged: (s) =>
+                          setState(() => _typePlein = s.first),
+                    ),
+                    const SizedBox(height: 14),
+                    _field(_station, 'Station',
+                        icon: Icons.place_outlined, required: false),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _lat != null
+                                ? 'GPS : ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}'
+                                : 'Aucune position',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _gpsLoading ? null : _captureGps,
+                          icon: _gpsLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.my_location_outlined, size: 18),
+                          label: const Text('GPS'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    _field(_notes, 'Notes',
+                        icon: Icons.notes_outlined,
+                        required: false,
+                        lines: 2),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              AppCard(
+                onTap: _pickPhoto,
+                child: Row(
+                  children: [
+                    const Icon(Icons.receipt_long_outlined,
+                        color: AppColors.petrol),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(_photo == null
+                          ? 'Ajouter la photo du reçu'
+                          : 'Photo du reçu ajoutée'),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.slate400),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                label: _isEdit ? 'Enregistrer' : 'Ajouter le plein',
+                icon: Icons.check_rounded,
+                loading: _saving,
+                onPressed: () => _save(vehicule.id),
               ),
             ],
           ),
@@ -361,42 +344,17 @@ class _PleinFormScreenState extends ConsumerState<PleinFormScreen> {
           ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))]
           : null,
       decoration: InputDecoration(
-          labelText: label, prefixIcon: icon != null ? Icon(icon) : null),
+          labelText: label,
+          prefixIcon: icon != null ? Icon(icon, size: 20) : null),
       validator: required
           ? (v) {
               if (v == null || v.trim().isEmpty) return 'Requis';
-              if (number &&
-                  double.tryParse(v.replaceAll(',', '.')) == null) {
+              if (number && double.tryParse(v.replaceAll(',', '.')) == null) {
                 return 'Nombre invalide';
               }
               return null;
             }
           : null,
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.title});
-  final String title;
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
-      child: Row(
-        children: [
-          IconButton(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.close_rounded)),
-          Expanded(
-            child: Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -412,16 +370,13 @@ class _DateTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
-          const Icon(Icons.calendar_today_rounded, color: AppColors.emerald),
+          const Icon(Icons.event_outlined, color: AppColors.petrol, size: 20),
           const SizedBox(width: 12),
-          Text('Date', style: Theme.of(context).textTheme.bodyMedium),
+          const Text('Date'),
           const Spacer(),
           Text(Formatters.date(date),
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const Icon(Icons.chevron_right_rounded),
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.slate400),
         ],
       ),
     );

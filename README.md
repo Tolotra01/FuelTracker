@@ -186,13 +186,13 @@ au démarrage. Impeller est donc **désactivé** au profit de **Skia** via
 stable** (API 35, *Google APIs*, x86_64) plutôt qu'une image preview :
 *Device Manager → Create Device → Pixel 9 → choisir API 35*.
 
----
 
-## 📂 Données
+
+ 📂 Données
 
 La base SQLite (`fueltrack`) et les photos sont stockées dans le dossier privé de
 l'application. Un export `.csv` / `.pdf` permet de sauvegarder ou partager les données.
 
----
 
-*FuelTrack — généré par Tolotra Nomenjanahary.*
+
+FuelTrack — généré par Tolotra Nomenjanahary.

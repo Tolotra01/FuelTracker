@@ -75,6 +75,18 @@ class $VehiculesTable extends Vehicules
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _capaciteReservoirMeta = const VerificationMeta(
+    'capaciteReservoir',
+  );
+  @override
+  late final GeneratedColumn<double> capaciteReservoir =
+      GeneratedColumn<double>(
+        'capacite_reservoir',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _photoMeta = const VerificationMeta('photo');
   @override
   late final GeneratedColumn<String> photo = GeneratedColumn<String>(
@@ -119,6 +131,7 @@ class $VehiculesTable extends Vehicules
     plaque,
     typeCarburant,
     kmInitial,
+    capaciteReservoir,
     photo,
     dateAjout,
     parDefaut,
@@ -174,6 +187,15 @@ class $VehiculesTable extends Vehicules
       context.handle(
         _kmInitialMeta,
         kmInitial.isAcceptableOrUnknown(data['km_initial']!, _kmInitialMeta),
+      );
+    }
+    if (data.containsKey('capacite_reservoir')) {
+      context.handle(
+        _capaciteReservoirMeta,
+        capaciteReservoir.isAcceptableOrUnknown(
+          data['capacite_reservoir']!,
+          _capaciteReservoirMeta,
+        ),
       );
     }
     if (data.containsKey('photo')) {
@@ -235,6 +257,10 @@ class $VehiculesTable extends Vehicules
         DriftSqlType.double,
         data['${effectivePrefix}km_initial'],
       )!,
+      capaciteReservoir: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}capacite_reservoir'],
+      ),
       photo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}photo'],
@@ -267,6 +293,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
   final String? plaque;
   final TypeCarburant typeCarburant;
   final double kmInitial;
+  final double? capaciteReservoir;
   final String? photo;
   final DateTime dateAjout;
   final bool parDefaut;
@@ -278,6 +305,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
     this.plaque,
     required this.typeCarburant,
     required this.kmInitial,
+    this.capaciteReservoir,
     this.photo,
     required this.dateAjout,
     required this.parDefaut,
@@ -298,6 +326,9 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
       );
     }
     map['km_initial'] = Variable<double>(kmInitial);
+    if (!nullToAbsent || capaciteReservoir != null) {
+      map['capacite_reservoir'] = Variable<double>(capaciteReservoir);
+    }
     if (!nullToAbsent || photo != null) {
       map['photo'] = Variable<String>(photo);
     }
@@ -317,6 +348,9 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
           : Value(plaque),
       typeCarburant: Value(typeCarburant),
       kmInitial: Value(kmInitial),
+      capaciteReservoir: capaciteReservoir == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capaciteReservoir),
       photo: photo == null && nullToAbsent
           ? const Value.absent()
           : Value(photo),
@@ -340,6 +374,9 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
         serializer.fromJson<int>(json['typeCarburant']),
       ),
       kmInitial: serializer.fromJson<double>(json['kmInitial']),
+      capaciteReservoir: serializer.fromJson<double?>(
+        json['capaciteReservoir'],
+      ),
       photo: serializer.fromJson<String?>(json['photo']),
       dateAjout: serializer.fromJson<DateTime>(json['dateAjout']),
       parDefaut: serializer.fromJson<bool>(json['parDefaut']),
@@ -358,6 +395,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
         $VehiculesTable.$convertertypeCarburant.toJson(typeCarburant),
       ),
       'kmInitial': serializer.toJson<double>(kmInitial),
+      'capaciteReservoir': serializer.toJson<double?>(capaciteReservoir),
       'photo': serializer.toJson<String?>(photo),
       'dateAjout': serializer.toJson<DateTime>(dateAjout),
       'parDefaut': serializer.toJson<bool>(parDefaut),
@@ -372,6 +410,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
     Value<String?> plaque = const Value.absent(),
     TypeCarburant? typeCarburant,
     double? kmInitial,
+    Value<double?> capaciteReservoir = const Value.absent(),
     Value<String?> photo = const Value.absent(),
     DateTime? dateAjout,
     bool? parDefaut,
@@ -383,6 +422,9 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
     plaque: plaque.present ? plaque.value : this.plaque,
     typeCarburant: typeCarburant ?? this.typeCarburant,
     kmInitial: kmInitial ?? this.kmInitial,
+    capaciteReservoir: capaciteReservoir.present
+        ? capaciteReservoir.value
+        : this.capaciteReservoir,
     photo: photo.present ? photo.value : this.photo,
     dateAjout: dateAjout ?? this.dateAjout,
     parDefaut: parDefaut ?? this.parDefaut,
@@ -398,6 +440,9 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
           ? data.typeCarburant.value
           : this.typeCarburant,
       kmInitial: data.kmInitial.present ? data.kmInitial.value : this.kmInitial,
+      capaciteReservoir: data.capaciteReservoir.present
+          ? data.capaciteReservoir.value
+          : this.capaciteReservoir,
       photo: data.photo.present ? data.photo.value : this.photo,
       dateAjout: data.dateAjout.present ? data.dateAjout.value : this.dateAjout,
       parDefaut: data.parDefaut.present ? data.parDefaut.value : this.parDefaut,
@@ -414,6 +459,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
           ..write('plaque: $plaque, ')
           ..write('typeCarburant: $typeCarburant, ')
           ..write('kmInitial: $kmInitial, ')
+          ..write('capaciteReservoir: $capaciteReservoir, ')
           ..write('photo: $photo, ')
           ..write('dateAjout: $dateAjout, ')
           ..write('parDefaut: $parDefaut')
@@ -430,6 +476,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
     plaque,
     typeCarburant,
     kmInitial,
+    capaciteReservoir,
     photo,
     dateAjout,
     parDefaut,
@@ -445,6 +492,7 @@ class Vehicule extends DataClass implements Insertable<Vehicule> {
           other.plaque == this.plaque &&
           other.typeCarburant == this.typeCarburant &&
           other.kmInitial == this.kmInitial &&
+          other.capaciteReservoir == this.capaciteReservoir &&
           other.photo == this.photo &&
           other.dateAjout == this.dateAjout &&
           other.parDefaut == this.parDefaut);
@@ -458,6 +506,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
   final Value<String?> plaque;
   final Value<TypeCarburant> typeCarburant;
   final Value<double> kmInitial;
+  final Value<double?> capaciteReservoir;
   final Value<String?> photo;
   final Value<DateTime> dateAjout;
   final Value<bool> parDefaut;
@@ -470,6 +519,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
     this.plaque = const Value.absent(),
     this.typeCarburant = const Value.absent(),
     this.kmInitial = const Value.absent(),
+    this.capaciteReservoir = const Value.absent(),
     this.photo = const Value.absent(),
     this.dateAjout = const Value.absent(),
     this.parDefaut = const Value.absent(),
@@ -483,6 +533,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
     this.plaque = const Value.absent(),
     required TypeCarburant typeCarburant,
     this.kmInitial = const Value.absent(),
+    this.capaciteReservoir = const Value.absent(),
     this.photo = const Value.absent(),
     required DateTime dateAjout,
     this.parDefaut = const Value.absent(),
@@ -501,6 +552,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
     Expression<String>? plaque,
     Expression<int>? typeCarburant,
     Expression<double>? kmInitial,
+    Expression<double>? capaciteReservoir,
     Expression<String>? photo,
     Expression<DateTime>? dateAjout,
     Expression<bool>? parDefaut,
@@ -514,6 +566,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
       if (plaque != null) 'plaque': plaque,
       if (typeCarburant != null) 'type_carburant': typeCarburant,
       if (kmInitial != null) 'km_initial': kmInitial,
+      if (capaciteReservoir != null) 'capacite_reservoir': capaciteReservoir,
       if (photo != null) 'photo': photo,
       if (dateAjout != null) 'date_ajout': dateAjout,
       if (parDefaut != null) 'par_defaut': parDefaut,
@@ -529,6 +582,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
     Value<String?>? plaque,
     Value<TypeCarburant>? typeCarburant,
     Value<double>? kmInitial,
+    Value<double?>? capaciteReservoir,
     Value<String?>? photo,
     Value<DateTime>? dateAjout,
     Value<bool>? parDefaut,
@@ -542,6 +596,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
       plaque: plaque ?? this.plaque,
       typeCarburant: typeCarburant ?? this.typeCarburant,
       kmInitial: kmInitial ?? this.kmInitial,
+      capaciteReservoir: capaciteReservoir ?? this.capaciteReservoir,
       photo: photo ?? this.photo,
       dateAjout: dateAjout ?? this.dateAjout,
       parDefaut: parDefaut ?? this.parDefaut,
@@ -575,6 +630,9 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
     if (kmInitial.present) {
       map['km_initial'] = Variable<double>(kmInitial.value);
     }
+    if (capaciteReservoir.present) {
+      map['capacite_reservoir'] = Variable<double>(capaciteReservoir.value);
+    }
     if (photo.present) {
       map['photo'] = Variable<String>(photo.value);
     }
@@ -600,6 +658,7 @@ class VehiculesCompanion extends UpdateCompanion<Vehicule> {
           ..write('plaque: $plaque, ')
           ..write('typeCarburant: $typeCarburant, ')
           ..write('kmInitial: $kmInitial, ')
+          ..write('capaciteReservoir: $capaciteReservoir, ')
           ..write('photo: $photo, ')
           ..write('dateAjout: $dateAjout, ')
           ..write('parDefaut: $parDefaut, ')
@@ -2463,7 +2522,7 @@ class $ReglagesTable extends Reglages with TableInfo<$ReglagesTable, Reglage> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('€'),
+    defaultValue: const Constant('Ar'),
   );
   static const VerificationMeta _uniteDistanceMeta = const VerificationMeta(
     'uniteDistance',
@@ -3121,6 +3180,7 @@ typedef $$VehiculesTableCreateCompanionBuilder =
       Value<String?> plaque,
       required TypeCarburant typeCarburant,
       Value<double> kmInitial,
+      Value<double?> capaciteReservoir,
       Value<String?> photo,
       required DateTime dateAjout,
       Value<bool> parDefaut,
@@ -3135,6 +3195,7 @@ typedef $$VehiculesTableUpdateCompanionBuilder =
       Value<String?> plaque,
       Value<TypeCarburant> typeCarburant,
       Value<double> kmInitial,
+      Value<double?> capaciteReservoir,
       Value<String?> photo,
       Value<DateTime> dateAjout,
       Value<bool> parDefaut,
@@ -3247,6 +3308,11 @@ class $$VehiculesTableFilterComposer
 
   ColumnFilters<double> get kmInitial => $composableBuilder(
     column: $table.kmInitial,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get capaciteReservoir => $composableBuilder(
+    column: $table.capaciteReservoir,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3385,6 +3451,11 @@ class $$VehiculesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get capaciteReservoir => $composableBuilder(
+    column: $table.capaciteReservoir,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get photo => $composableBuilder(
     column: $table.photo,
     builder: (column) => ColumnOrderings(column),
@@ -3433,6 +3504,11 @@ class $$VehiculesTableAnnotationComposer
 
   GeneratedColumn<double> get kmInitial =>
       $composableBuilder(column: $table.kmInitial, builder: (column) => column);
+
+  GeneratedColumn<double> get capaciteReservoir => $composableBuilder(
+    column: $table.capaciteReservoir,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get photo =>
       $composableBuilder(column: $table.photo, builder: (column) => column);
@@ -3558,6 +3634,7 @@ class $$VehiculesTableTableManager
                 Value<String?> plaque = const Value.absent(),
                 Value<TypeCarburant> typeCarburant = const Value.absent(),
                 Value<double> kmInitial = const Value.absent(),
+                Value<double?> capaciteReservoir = const Value.absent(),
                 Value<String?> photo = const Value.absent(),
                 Value<DateTime> dateAjout = const Value.absent(),
                 Value<bool> parDefaut = const Value.absent(),
@@ -3570,6 +3647,7 @@ class $$VehiculesTableTableManager
                 plaque: plaque,
                 typeCarburant: typeCarburant,
                 kmInitial: kmInitial,
+                capaciteReservoir: capaciteReservoir,
                 photo: photo,
                 dateAjout: dateAjout,
                 parDefaut: parDefaut,
@@ -3584,6 +3662,7 @@ class $$VehiculesTableTableManager
                 Value<String?> plaque = const Value.absent(),
                 required TypeCarburant typeCarburant,
                 Value<double> kmInitial = const Value.absent(),
+                Value<double?> capaciteReservoir = const Value.absent(),
                 Value<String?> photo = const Value.absent(),
                 required DateTime dateAjout,
                 Value<bool> parDefaut = const Value.absent(),
@@ -3596,6 +3675,7 @@ class $$VehiculesTableTableManager
                 plaque: plaque,
                 typeCarburant: typeCarburant,
                 kmInitial: kmInitial,
+                capaciteReservoir: capaciteReservoir,
                 photo: photo,
                 dateAjout: dateAjout,
                 parDefaut: parDefaut,

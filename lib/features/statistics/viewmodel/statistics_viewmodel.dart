@@ -28,6 +28,7 @@ class StatsData {
     required this.coutParMois,
     required this.repartitionDepenses,
     required this.anomalies,
+    required this.autonomieEstimee,
   });
 
   final double? moyenneL100km;
@@ -41,6 +42,9 @@ class StatsData {
   final List<MonthlyPoint> coutParMois;
   final Map<CategorieDepense, double> repartitionDepenses;
   final int anomalies;
+
+  /// Autonomie estimée (km) sur un plein complet du réservoir.
+  final double? autonomieEstimee;
 
   double get coutTotalGlobal => coutTotalCarburant + coutTotalDepenses;
 }
@@ -85,6 +89,12 @@ final statisticsProvider = Provider<StatsData?>((ref) {
   final coutParKm =
       distanceTotale > 0 ? (coutCarburant + coutDepenses) / distanceTotale : null;
 
+  // Autonomie estimée = capacité réservoir / conso × 100 (km sur un plein).
+  final double? autonomie =
+      (vehicule.capaciteReservoir != null && moyenne != null && moyenne > 0)
+          ? vehicule.capaciteReservoir! * 100 / moyenne
+          : null;
+
   // Séries mensuelles (12 derniers mois)
   final consoParMois = _consoMensuelle(pleinsData);
   final coutParMois = _coutMensuel(pleins, depenses);
@@ -111,6 +121,7 @@ final statisticsProvider = Provider<StatsData?>((ref) {
     coutParMois: coutParMois,
     repartitionDepenses: repartition,
     anomalies: anomalies,
+    autonomieEstimee: autonomie,
   );
 });
 

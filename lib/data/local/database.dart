@@ -17,6 +17,8 @@ class Vehicules extends Table {
   TextColumn get plaque => text().nullable()();
   IntColumn get typeCarburant => intEnum<TypeCarburant>()();
   RealColumn get kmInitial => real().withDefault(const Constant(0))();
+  // Capacité du réservoir en litres (pour estimer l'autonomie).
+  RealColumn get capaciteReservoir => real().nullable()();
   TextColumn get photo => text().nullable()();
   DateTimeColumn get dateAjout => dateTime()();
   BoolColumn get parDefaut => boolean().withDefault(const Constant(false))();
@@ -82,7 +84,7 @@ class Reglages extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   TextColumn get nom => text().withDefault(const Constant('Conducteur'))();
   TextColumn get email => text().nullable()();
-  TextColumn get devise => text().withDefault(const Constant('€'))();
+  TextColumn get devise => text().withDefault(const Constant('Ar'))();
   TextColumn get uniteDistance =>
       text().withDefault(const Constant('km'))();
   TextColumn get uniteVolume => text().withDefault(const Constant('L'))();
@@ -111,7 +113,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +124,11 @@ class AppDatabase extends _$AppDatabase {
             const ReglagesCompanion(id: Value(1)),
             mode: InsertMode.insertOrIgnore,
           );
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(vehicules, vehicules.capaciteReservoir);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');

@@ -69,12 +69,13 @@ enum CategorieDepense {
         CategorieDepense.autres => Icons.more_horiz_rounded,
       };
 
+  /// Teintes sobres pour la légende des graphiques (aucune couleur saturée).
   Color get color => switch (this) {
-        CategorieDepense.carburant => AppColors.orange,
-        CategorieDepense.maintenance => AppColors.info,
-        CategorieDepense.assurance => AppColors.emerald,
-        CategorieDepense.peage => const Color(0xFFB47BFF),
-        CategorieDepense.parking => const Color(0xFF59C2FF),
+        CategorieDepense.carburant => AppColors.accent,
+        CategorieDepense.maintenance => AppColors.petrol,
+        CategorieDepense.assurance => AppColors.forest,
+        CategorieDepense.peage => AppColors.slate500,
+        CategorieDepense.parking => const Color(0xFF4E7A86),
         CategorieDepense.reparation => AppColors.danger,
         CategorieDepense.autres => AppColors.warning,
       };
@@ -127,8 +128,8 @@ enum StatutMaintenance {
       };
 
   Color get color => switch (this) {
-        StatutMaintenance.planifie => AppColors.info,
-        StatutMaintenance.effectue => AppColors.emerald,
+        StatutMaintenance.planifie => AppColors.petrol,
+        StatutMaintenance.effectue => AppColors.accent,
         StatutMaintenance.enRetard => AppColors.danger,
       };
 

@@ -21,6 +21,7 @@ class VehicleViewModel extends Notifier<void> {
     String? plaque,
     required TypeCarburant typeCarburant,
     required double kmInitial,
+    double? capaciteReservoir,
     String? photo,
     bool parDefaut = false,
   }) async {
@@ -36,6 +37,7 @@ class VehicleViewModel extends Notifier<void> {
       plaque: Value(plaque),
       typeCarburant: Value(typeCarburant),
       kmInitial: Value(kmInitial),
+      capaciteReservoir: Value(capaciteReservoir),
       photo: Value(photo),
       dateAjout: isNew ? Value(DateTime.now()) : const Value.absent(),
       parDefaut: Value(parDefaut),
